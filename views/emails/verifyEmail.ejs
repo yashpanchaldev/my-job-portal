@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Verify Your Email - My Job Post</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        padding: 20px;
+        color: #333;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background: #fff;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+      }
+      h2 {
+        color: #3498db;
+      }
+      .otp {
+        font-size: 26px;
+        font-weight: bold;
+        letter-spacing: 6px;
+        color: #e67e22;
+        margin: 20px 0;
+      }
+      p {
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .footer {
+        margin-top: 20px;
+        font-size: 12px;
+        color: #777;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Welcome to My Job Post!</h2>
+      <p>Hello <%= email %>,</p>
+      <p>Thank you for signing up. To complete your registration, please verify your email address using the following code:</p>
+      <div class="otp"><%= otp %></div>
+      <p>This code is valid for <strong>10 minutes</strong>. Please do not share it with anyone.</p>
+      <p>If you didn’t sign up, just ignore this email.</p>
+      <div class="footer">
+        <p>Best regards,<br>The My Job Post Team 💼</p>
+      </div>
+    </div>
+  </body>
+</html>
