@@ -12,7 +12,6 @@ export default class userController extends Base {
     const user_id = req._id;
     console.log(user_id)
 
-    // 🧠 1️⃣ Get basic user info
     const user = await this.selectOne(
       "SELECT id, fullname, email FROM users WHERE id = ?",
       [user_id]
@@ -24,7 +23,6 @@ export default class userController extends Base {
       return this.send_res(res);
     }
 
-    // 🧩 2️⃣ Get candidate details
     const candidateDetails = await this.selectOne(
       `SELECT id, title_headline, personal_website_url, profile_picture_url,
               nationality, date_of_birth, gender, marital_status, biography,
@@ -33,14 +31,12 @@ export default class userController extends Base {
       [user_id]
     );
 
-    // 📄 3️⃣ Get all resumes
     const resumes = await this.select(
       `SELECT id, file_name, file_path, file_size_mb
        FROM candidate_resumes WHERE user_id = ? ORDER BY upload_date DESC`,
       [user_id]
     );
 
-    // 🎓 4️⃣ Get all education entries
     const education = await this.select(
       `SELECT id, institution_name, degree_name, field_of_study,
               start_date, end_date, description
@@ -48,7 +44,6 @@ export default class userController extends Base {
       [user_id]
     );
 
-    // 💼 5️⃣ Get all experience entries
     const experience = await this.select(
       `SELECT id, job_title, company_name, location,
               start_date, end_date, description
@@ -56,21 +51,18 @@ export default class userController extends Base {
       [user_id]
     );
 
-    // 🔗 6️⃣ Get social links
     const social_links = await this.select(
       `SELECT id, platform_name, profile_url
        FROM candidate_social_links WHERE user_id = ?`,
       [user_id]
     );
 
-    // ☎️ 7️⃣ Get contact info
     const contact_info = await this.selectOne(
       `SELECT country_code, phone_number, email, location, latitude, longitude
        FROM candidate_contact_info WHERE user_id = ?`,
       [user_id]
     );
 
-    // 🔔 8️⃣ Get job alerts & notifications
     const job_alerts = await this.selectOne(
       `SELECT alert_role, alert_location, latitude, longitude,
               notify_shortlisted, notify_applied_jobs_expire,
@@ -80,7 +72,6 @@ export default class userController extends Base {
       [user_id]
     );
 
-    // 🧩 Combine all
     const fullProfile = {
       user,
       candidate_details: candidateDetails || {},
@@ -551,6 +542,8 @@ async addOrUpdateJobAlertsAndNotifications(req, res, next) {
     return this.send_res(res);
   }
 }
+
+
 
 
 

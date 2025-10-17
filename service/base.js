@@ -325,7 +325,7 @@ async compareHash(data, storedHash) {
     }
     return result.secure_url;
   } catch (err) {
-    console.error("Cloudinary Upload Error (single):", err.message);
+    console.error("Cloudinary Upload Error (single):", err);
     return null;
   }
 }
