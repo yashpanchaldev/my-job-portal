@@ -220,6 +220,90 @@ async addSocialmedia(req, res, next) {
     return this.send_res(res);
   }
 }
+// Get all companies with details
+async getAllCompanies(req, res, next) {
+  try {
+    const companies = await this.select(`SELECT * FROM company_details`);
+
+    for (let company of companies) {
+      const companyId = company.id;
+
+      const contact = await this.selectOne(
+        `SELECT * FROM company_contact WHERE company_id = ?`,
+        [companyId]
+      );
+
+      const socials = await this.select(
+        `SELECT platform_name, profile_url FROM company_social_media WHERE company_id = ?`,
+        [companyId]
+      );
+
+      company.contact_info = contact || null;
+      company.social_links = socials || [];
+    }
+
+    this.s = 1;
+    this.r = companies;
+    this.m = "Companies fetched successfully.";
+    return this.send_res(res);
+
+  } catch (error) {
+    this.s = 0;
+    this.err = error.message;
+    return this.send_res(res);
+  }
+
+  
+}
+// Get company info and all jobs posted by that company
+async getCompanyWithJobs(req, res, next) {
+  try {
+    const company_id = req.params.company_id;
+
+    const company = await this.selectOne(
+      `SELECT * FROM company_details WHERE id = ?`,
+      [company_id]
+    );
+
+    if (!company) {
+      this.s = 0;
+      this.m = "Company not found.";
+      return this.send_res(res);
+    }
+
+    const jobs = await this.select(
+      `SELECT * FROM job_posts WHERE company_id = ?`,
+      [company_id]
+    );
+
+    company.jobs = jobs || [];
+
+    const contact = await this.selectOne(
+      `SELECT * FROM company_contact WHERE company_id = ?`,
+      [company_id]
+    );
+
+    const socials = await this.select(
+      `SELECT platform_name, profile_url FROM company_social_media WHERE company_id = ?`,
+      [company_id]
+    );
+
+    company.contact_info = contact || null;
+    company.social_links = socials || [];
+
+    this.s = 1;
+    this.r = company;
+    this.m = "Company and jobs fetched successfully.";
+    return this.send_res(res);
+
+  } catch (error) {
+    this.s = 0;
+    this.err = error.message;
+    return this.send_res(res);
+  }
+}
+
+
 
 
 }

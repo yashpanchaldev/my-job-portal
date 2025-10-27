@@ -469,4 +469,199 @@ WHERE cd.id = ?
       return this.send_res(res);
     }
   }
+
+  async applyJob(req,res,next){
+    try {
+      const candidate_id = req._id
+      const job_id = req.params.job_id
+
+      const {resume_id, cover_letter} = req.body
+
+      console.log(req.body)
+      console.log(job_id)
+
+      if(this.varify_req(req, ['resume_id'])){
+        this.s =0
+        this.err = "Missing required fields."
+        return this.send_res(res)
+      }
+      // Check if already applied
+      const existing = await this.selectOne(
+        "SELECT * FROM job_applications WHERE candidate_id = ? AND job_id = ?",
+        [candidate_id, job_id]
+      )
+      if(existing){
+        this.s =0
+        this.err = "You have already applied for this job."
+        return this.send_res(res)
+      }
+
+      await  this.insert(
+        `INSERT INTO job_applications 
+        (candidate_id, job_id, resume_id, cover_letter) 
+        VALUES (?, ?, ?, ?)`,
+        [candidate_id, job_id, resume_id, cover_letter]
+      )
+      this.s =1
+      this.m ="Job application submitted successfully."
+      return this.send_res(res)
+
+
+
+      
+    } catch (error) {
+      this.s =0
+      this.err = error.message
+      return this.send_res(res)
+    }
+  }
+
+  async jobApplicants(req,res,next){
+    try {
+      const employer_id = req._id
+      const {job_id} = req.params
+      // Verify that the job belongs to the employer
+      const job = await this.selectOne(
+        "SELECT id FROM job_posts WHERE id = ? AND employer_id = ?",
+        [job_id, employer_id]
+      )
+      if(!job){
+        this.s =0
+        this.err = "Job not found or unauthorized."
+        return this.send_res(res)
+      }
+      // Fetch applicants
+      const applicants = await this.select(
+        `SELECT ja.*, u.username, u.fullname, cd.title_headline
+        FROM job_applications ja
+        LEFT JOIN users u ON ja.candidate_id = u.id
+        LEFT JOIN candidate_details cd ON ja.candidate_id = cd.user_id
+        WHERE ja.job_id = ?`,
+        [job_id]
+      )
+      this.s =1
+      this.m ="Applicants fetched successfully."
+      this.r = {applicants}
+      return this.send_res(res)
+      
+    } catch (error) {
+      this.s =0
+      this.err = error.message
+      return this.send_res(res)
+      
+    }  }
+ 
+async updateApplicationStatus(req, res, next) {
+  try {
+    const employer_id = req._id;
+    const { application_id } = req.params;
+    const { status } = req.body;
+
+    const allowedStatuses = ['shortlisted', 'rejected', 'hired'];
+
+    // Validate status if provided
+    if (status && !allowedStatuses.includes(status)) {
+      this.s = 0;
+      this.err = "Invalid status. Allowed values: shortlisted, rejected, hired.";
+      return this.send_res(res);
+    }
+
+    // Validate application ownership
+    const application = await this.selectOne(
+      `SELECT ja.id FROM job_applications ja
+       LEFT JOIN job_posts jp ON ja.job_id = jp.id
+       WHERE ja.id = ? AND jp.employer_id = ?`,
+      [application_id, employer_id]
+    );
+
+    if (!application) {
+      this.s = 0;
+      this.err = "Application not found or unauthorized.";
+      return this.send_res(res);
+    }
+
+    // If status is provided, update
+    if (status) {
+      await this.update(
+        "UPDATE job_applications SET status = ? WHERE id = ?",
+        [status, application_id]
+      );
+      this.s = 1;
+      this.m = `Applicant ${status} successfully.`;
+    }
+
+    return this.send_res(res);
+  } catch (error) {
+    this.s = 0;
+    this.err = error.message;
+    return this.send_res(res);
+  }
+}
+async getShortlistedApplications(req, res, next) {
+  try {
+    const employer_id = req._id;
+    const { job_id } = req.params;
+
+    // First validate if this job belongs to the employer
+    const job = await this.selectOne(
+      "SELECT id FROM job_posts WHERE id = ? AND employer_id = ?",
+      [job_id, employer_id]
+    );
+    console.log(job);
+
+    if (!job) {
+      this.s = 0;
+      this.err = "Job post not found or unauthorized.";
+      return this.send_res(res);
+    }
+
+    // Fetch all shortlisted applications for this job
+    const shortlisted = await this.select(
+      `SELECT ja.*, u.fullname AS applicant_name, r.file_path AS resume_path
+       FROM job_applications ja
+       LEFT JOIN users u ON ja.id = u.id
+       LEFT JOIN candidate_resumes r ON ja.resume_id = r.id
+       WHERE ja.job_id = ? AND ja.status = 'shortlisted'`,
+      [job_id]
+    );
+
+    this.s = 1;
+    this.r = shortlisted;
+    return this.send_res(res);
+
+  } catch (error) {
+    this.s = 0;
+    this.err = error.message;
+    return this.send_res(res);
+  }
+}
+
+async reletedJobs(req,res,next){
+  try {
+    
+    const  user_id = req._id; 
+
+    const userDetails = await this.selectOne("SELECT cd.title_headline,ci.location FROM candidate_details cd INNER JOIN candidate_contact_info ci ON cd.user_id = ci.user_id  WHERE cd.user_id = ?", [user_id]);
+    if(!userDetails){      this.s =0
+      this.err = "Candidate profile not found."
+      return this.send_res(res)
+    }
+    const searchKeyword = userDetails.title_headline?.trim(); 
+    const location = userDetails.location;  
+
+    const relatedJobs = await this.select(
+      `SELECT * FROM job_posts jp WHERE (jp.job_title LIKE ? OR jp.job_role LIKE ?) OR jp.location = ? ORDER BY jp.created_at DESC LIMIT 10`,
+      [`%${searchKeyword}%`, `%${searchKeyword}%`, location]
+      );
+    this.s =1
+    this.m ="Related jobs fetched successfully."
+    this.r = {relatedJobs}
+    return this.send_res(res)
+  } catch (error) {
+    this.s =0
+    this.err = error.message
+    return this.send_res(res)
+  }
+
+}
 }
